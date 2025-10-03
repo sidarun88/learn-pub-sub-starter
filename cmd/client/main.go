@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -16,7 +15,7 @@ import (
 const amqpURI = "amqp://guest:guest@localhost:5672/"
 
 func main() {
-	fmt.Println("Starting Peril client...")
+	log.Println("Starting Peril client...")
 
 	conn, err := amqp.Dial(amqpURI)
 	if err != nil {
@@ -24,7 +23,7 @@ func main() {
 	}
 
 	defer conn.Close()
-	fmt.Println("Connected to RabbitMQ")
+	log.Println("Connected to RabbitMQ")
 
 	username, err := gamelogic.ClientWelcome()
 	if err != nil {
@@ -44,12 +43,12 @@ func main() {
 	}
 
 	defer ch.Close()
-	fmt.Printf("Declared and bounded queue '%s'\n", queue.Name)
+	log.Printf("Declared and bounded queue '%s'\n", queue.Name)
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
-	fmt.Println("Program running. Press Ctrl+C to exit gracefully.")
+	log.Println("Program running. Press Ctrl+C to exit gracefully.")
 
 	<-signalChan
-	fmt.Println("Exiting...")
+	log.Println("Exiting...")
 }
