@@ -54,10 +54,22 @@ func main() {
 		fmt.Sprintf("%s.%s", routing.ArmyMovesPrefix, gameState.GetUsername()),
 		fmt.Sprintf("%s.*", routing.ArmyMovesPrefix),
 		pubsub.TransientQueue,
-		handlerMove(gameState),
+		handlerMove(pubChannel, gameState),
 	)
 	if err != nil {
-		log.Fatalf("failed to subscribe to game updates queue: %v", err)
+		log.Fatalf("failed to subscribe to game moves queue: %v", err)
+	}
+
+	err = pubsub.SubscribeJSON[gamelogic.RecognitionOfWar](
+		conn,
+		routing.ExchangePerilTopic,
+		routing.WarRecognitionsPrefix,
+		fmt.Sprintf("%s.*", routing.WarRecognitionsPrefix),
+		pubsub.DurableQueue,
+		handlerWar(gameState),
+	)
+	if err != nil {
+		log.Fatalf("failed to subscribe to game war queue: %v", err)
 	}
 
 	for {
