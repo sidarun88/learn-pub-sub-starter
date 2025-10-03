@@ -3,11 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/sidarun88/learn-pub-sub-starter/internal/pubsub"
+	"github.com/sidarun88/learn-pub-sub-starter/internal/routing"
 )
 
 const amqpURI = "amqp://guest:guest@localhost:5672/"
@@ -23,10 +22,20 @@ func main() {
 	defer conn.Close()
 	fmt.Println("Connected to RabbitMQ")
 
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
-	fmt.Println("Program running. Press Ctrl+C to exit gracefully.")
+	channel, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("Failed to open a channel: %s", err)
+	}
 
-	sig := <-signalChan
-	fmt.Printf("\nReceived signal: %v. Exiting...\n", sig)
+	state := routing.PlayingState{IsPaused: true}
+	err = pubsub.PublishJSON(
+		channel,
+		routing.ExchangePerilDirect,
+		routing.PauseKey,
+		state,
+	)
+	if err != nil {
+		log.Printf("Failed to publish a message: %v\n", err)
+	}
+	fmt.Println("Published 'Pause' message")
 }
