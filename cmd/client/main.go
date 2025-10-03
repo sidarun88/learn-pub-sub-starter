@@ -1,10 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
-	"os/signal"
-	"syscall"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/sidarun88/learn-pub-sub-starter/internal/gamelogic"
@@ -31,7 +30,7 @@ func main() {
 	}
 
 	queueName := routing.PauseKey + "." + username
-	ch, queue, err := pubsub.DeclareAndBind(
+	ch, _, err := pubsub.DeclareAndBind(
 		conn,
 		routing.ExchangePerilDirect,
 		queueName,
@@ -43,12 +42,37 @@ func main() {
 	}
 
 	defer ch.Close()
-	log.Printf("Declared and bounded queue '%s'\n", queue.Name)
+	gameState := gamelogic.NewGameState(username)
 
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
-	log.Println("Program running. Press Ctrl+C to exit gracefully.")
+	for {
+		words := gamelogic.GetInput()
+		if len(words) == 0 {
+			continue
+		}
 
-	<-signalChan
-	log.Println("Exiting...")
+		command := words[0]
+		switch command {
+		case "spawn":
+			err = gameState.CommandSpawn(words)
+			if err != nil {
+				fmt.Printf("Failed to spawn: %s\n", err)
+			}
+		case "move":
+			_, err = gameState.CommandMove(words)
+			if err != nil {
+				fmt.Printf("Failed to move: %s\n", err)
+			}
+		case "status":
+			gameState.CommandStatus()
+		case "help":
+			gamelogic.PrintClientHelp()
+		case "spam":
+			fmt.Println("Spamming not allowed yet!")
+		case "quit":
+			gamelogic.PrintQuit()
+			os.Exit(0)
+		default:
+			fmt.Printf("Unknown command: %s\n", command)
+		}
+	}
 }
