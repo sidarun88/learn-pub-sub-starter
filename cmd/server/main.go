@@ -77,7 +77,7 @@ func main() {
 			state := routing.PlayingState{IsPaused: false}
 			err = pubsub.PublishJSON(
 				channel,
-				routing.ExchangePerilTopic,
+				routing.ExchangePerilDirect,
 				routing.PauseKey,
 				state,
 			)
