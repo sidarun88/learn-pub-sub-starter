@@ -18,7 +18,7 @@ func main() {
 
 	conn, err := amqp.Dial(amqpURI)
 	if err != nil {
-		log.Fatalf("Failed to connect to RabbitMQ: %s", err)
+		log.Fatalf("failed to connect to RabbitMQ: %v", err)
 	}
 
 	defer conn.Close()
@@ -26,7 +26,7 @@ func main() {
 
 	username, err := gamelogic.ClientWelcome()
 	if err != nil {
-		log.Fatalf("Failed to get username: %s", err)
+		log.Fatalf("failed to get username: %v", err)
 	}
 
 	gameState := gamelogic.NewGameState(username)
@@ -54,12 +54,12 @@ func main() {
 		case "spawn":
 			err = gameState.CommandSpawn(words)
 			if err != nil {
-				fmt.Printf("Failed to spawn: %s\n", err)
+				fmt.Println(err)
 			}
 		case "move":
 			_, err = gameState.CommandMove(words)
 			if err != nil {
-				fmt.Printf("Failed to move: %s\n", err)
+				fmt.Println(err)
 			}
 		case "status":
 			gameState.CommandStatus()

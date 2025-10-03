@@ -17,7 +17,7 @@ func main() {
 
 	conn, err := amqp.Dial(amqpURI)
 	if err != nil {
-		log.Fatalf("Failed to connect to RabbitMQ: %s", err)
+		log.Fatalf("failed to connect to RabbitMQ: %s", err)
 	}
 
 	defer conn.Close()
@@ -25,11 +25,11 @@ func main() {
 
 	pubChannel, err := conn.Channel()
 	if err != nil {
-		log.Fatalf("Failed to open a channel: %s", err)
+		log.Fatalf("failed to open a channel: %s", err)
 	}
 
 	defer pubChannel.Close()
-	log.Println("Opened a publisher channel")
+	log.Println("Opened the publisher channel")
 
 	routingKey := routing.GameLogSlug + ".*"
 	channel, _, err := pubsub.DeclareAndBind(
@@ -40,7 +40,7 @@ func main() {
 		pubsub.DurableQueue,
 	)
 	if err != nil {
-		log.Fatalf("Failed to declare queue: %s", err)
+		log.Fatalf("failed to declare and bind queue: %s", err)
 	}
 
 	defer channel.Close()
@@ -69,7 +69,7 @@ func main() {
 				state,
 			)
 			if err != nil {
-				log.Printf("Failed to publish 'pause' message: %v\n", err)
+				log.Printf("failed to publish 'pause' message: %v\n", err)
 			}
 			log.Println("Pause message sent")
 		case "resume":
@@ -82,7 +82,7 @@ func main() {
 				state,
 			)
 			if err != nil {
-				log.Printf("Failed to publish 'resume' message: %v\n", err)
+				log.Printf("failed to publish 'resume' message: %v\n", err)
 			}
 			log.Println("Resume message sent")
 		default:
