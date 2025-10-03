@@ -14,6 +14,14 @@ const (
 	DurableQueue
 )
 
+type AckType int
+
+const (
+	Ack AckType = iota
+	NackRequeue
+	NackDiscard
+)
+
 func DeclareAndBind(
 	conn *amqp.Connection,
 	exchange,
@@ -58,7 +66,7 @@ func SubscribeJSON[T any](
 	queueName,
 	key string,
 	queueType SimpleQueueType,
-	handler func(T),
+	handler func(T) AckType,
 ) error {
 	channel, queue, err := DeclareAndBind(conn, exchange, queueName, key, queueType)
 	if err != nil {
@@ -89,10 +97,25 @@ func SubscribeJSON[T any](
 				continue
 			}
 
-			handler(data)
-			err = message.Ack(false)
-			if err != nil {
-				fmt.Printf("error acknowledging message: %v", err)
+			switch handler(data) {
+			case Ack:
+				err = message.Ack(false)
+				if err != nil {
+					fmt.Printf("error acknowledging message: %v\n", err)
+				}
+				fmt.Println("Message acknowledged")
+			case NackRequeue:
+				err = message.Nack(false, true)
+				if err != nil {
+					fmt.Printf("error nacking message: %v\n", err)
+				}
+				fmt.Println("Message nacked and re-queued")
+			case NackDiscard:
+				err = message.Nack(false, false)
+				if err != nil {
+					fmt.Printf("error nacking message: %v\n", err)
+				}
+				fmt.Println("Message nacked and discarded")
 			}
 		}
 	}()
