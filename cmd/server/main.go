@@ -25,7 +25,7 @@ func main() {
 
 	pubChannel, err := conn.Channel()
 	if err != nil {
-		log.Fatalf("failed to open a channel: %s", err)
+		log.Fatalf("failed to open publish channel: %s", err)
 	}
 
 	defer pubChannel.Close()
@@ -63,26 +63,28 @@ func main() {
 			log.Println("Sending pause message...")
 			state := routing.PlayingState{IsPaused: true}
 			err = pubsub.PublishJSON(
-				channel,
+				pubChannel,
 				routing.ExchangePerilDirect,
 				routing.PauseKey,
 				state,
 			)
 			if err != nil {
 				log.Printf("failed to publish 'pause' message: %v\n", err)
+				continue
 			}
 			log.Println("Pause message sent")
 		case "resume":
 			log.Println("Sending resume message...")
 			state := routing.PlayingState{IsPaused: false}
 			err = pubsub.PublishJSON(
-				channel,
+				pubChannel,
 				routing.ExchangePerilDirect,
 				routing.PauseKey,
 				state,
 			)
 			if err != nil {
 				log.Printf("failed to publish 'resume' message: %v\n", err)
+				continue
 			}
 			log.Println("Resume message sent")
 		default:
