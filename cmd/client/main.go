@@ -29,20 +29,19 @@ func main() {
 		log.Fatalf("Failed to get username: %s", err)
 	}
 
-	queueName := routing.PauseKey + "." + username
-	ch, _, err := pubsub.DeclareAndBind(
+	gameState := gamelogic.NewGameState(username)
+	queueName := routing.PauseKey + "." + gameState.GetUsername()
+	err = pubsub.SubscribeJSON[routing.PlayingState](
 		conn,
 		routing.ExchangePerilDirect,
 		queueName,
 		routing.PauseKey,
 		pubsub.TransientQueue,
+		handlerPause(gameState),
 	)
 	if err != nil {
-		log.Fatalf("Failed to declare queue: %s", err)
+		log.Fatalf("failed to subscribe to queue: %v", err)
 	}
-
-	defer ch.Close()
-	gameState := gamelogic.NewGameState(username)
 
 	for {
 		words := gamelogic.GetInput()
