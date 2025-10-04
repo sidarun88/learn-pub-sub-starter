@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/sidarun88/learn-pub-sub-starter/internal/gamelogic"
@@ -107,7 +108,24 @@ func main() {
 		case "help":
 			gamelogic.PrintClientHelp()
 		case "spam":
-			fmt.Println("Spamming not allowed yet!")
+			if len(words) < 2 {
+				fmt.Println("usage: spam <number>")
+				continue
+			}
+
+			n, err := strconv.Atoi(words[1])
+			if err != nil {
+				fmt.Printf("error converting %s to int: %v, usage: spam <number>\n", words[1], err)
+				continue
+			}
+
+			for _ = range n {
+				msg := gamelogic.GetMaliciousLog()
+				err = publishGameLog(pubChannel, username, msg)
+				if err != nil {
+					fmt.Printf("failed to publish log: %v\n", err)
+				}
+			}
 		case "quit":
 			gamelogic.PrintQuit()
 			os.Exit(0)
