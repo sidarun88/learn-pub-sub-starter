@@ -1,6 +1,8 @@
 package pubsub
 
 import (
+	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 
@@ -22,7 +24,7 @@ const (
 	NackDiscard
 )
 
-func DeclareAndBind(
+func declareAndBind(
 	conn *amqp.Connection,
 	exchange,
 	queueName,
@@ -61,15 +63,16 @@ func DeclareAndBind(
 	return ch, queue, nil
 }
 
-func SubscribeJSON[T any](
+func subscribe[T any](
 	conn *amqp.Connection,
 	exchange,
 	queueName,
 	key string,
 	queueType SimpleQueueType,
 	handler func(T) AckType,
+	unMarshaller func([]byte) (T, error),
 ) error {
-	channel, queue, err := DeclareAndBind(conn, exchange, queueName, key, queueType)
+	channel, queue, err := declareAndBind(conn, exchange, queueName, key, queueType)
 	if err != nil {
 		return fmt.Errorf("could not declare and bind queue: %v", err)
 	}
@@ -91,8 +94,7 @@ func SubscribeJSON[T any](
 	go func() {
 		defer channel.Close()
 		for message := range messages {
-			var data T
-			err = json.Unmarshal(message.Body, &data)
+			data, err := unMarshaller(message.Body)
 			if err != nil {
 				fmt.Printf("error unmarshalling JSON: %v", err)
 				continue
@@ -119,4 +121,54 @@ func SubscribeJSON[T any](
 	}()
 
 	return nil
+}
+
+func SubscribeJSON[T any](
+	conn *amqp.Connection,
+	exchange,
+	queueName,
+	key string,
+	queueType SimpleQueueType,
+	handler func(T) AckType,
+) error {
+	unMarshaller := func(jsonBytes []byte) (T, error) {
+		var result T
+		err := json.Unmarshal(jsonBytes, &result)
+		return result, err
+	}
+	return subscribe[T](
+		conn,
+		exchange,
+		queueName,
+		key,
+		queueType,
+		handler,
+		unMarshaller,
+	)
+}
+
+func SubscribeGob[T any](
+	conn *amqp.Connection,
+	exchange,
+	queueName,
+	key string,
+	queueType SimpleQueueType,
+	handler func(T) AckType,
+) error {
+	unMarshaller := func(gobBytes []byte) (T, error) {
+		var result T
+		buffer := bytes.NewBuffer(gobBytes)
+		decoder := gob.NewDecoder(buffer)
+		err := decoder.Decode(&result)
+		return result, err
+	}
+	return subscribe[T](
+		conn,
+		exchange,
+		queueName,
+		key,
+		queueType,
+		handler,
+		unMarshaller,
+	)
 }

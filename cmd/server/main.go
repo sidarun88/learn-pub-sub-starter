@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -31,19 +32,18 @@ func main() {
 	defer pubChannel.Close()
 	log.Println("Opened the publisher channel")
 
-	routingKey := routing.GameLogSlug + ".*"
-	channel, _, err := pubsub.DeclareAndBind(
+	err = pubsub.SubscribeGob[routing.GameLog](
 		conn,
 		routing.ExchangePerilTopic,
 		routing.GameLogSlug,
-		routingKey,
+		fmt.Sprintf("%s.*", routing.GameLogSlug),
 		pubsub.DurableQueue,
+		handlerWarLogs(),
 	)
 	if err != nil {
-		log.Fatalf("failed to declare and bind queue: %s", err)
+		log.Fatalf("failed to subscribe to game logs: %s", err)
 	}
 
-	defer channel.Close()
 	gamelogic.PrintServerHelp()
 
 	for {
